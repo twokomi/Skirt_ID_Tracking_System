@@ -113,6 +113,112 @@ app.get('/api/locations', async (c) => {
   }
 });
 
+// Home page - Mode selection
+app.get('/', (c) => {
+  return c.html(`
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Skirt QR System</title>
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#1e40af">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+      body {
+        overscroll-behavior-y: contain;
+      }
+      .mode-card {
+        min-height: 200px;
+        transition: all 0.3s;
+      }
+      .mode-card:active {
+        transform: scale(0.98);
+      }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+    <div class="container max-w-md mx-auto p-4">
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-6 rounded-xl shadow-2xl mb-6 text-center">
+            <i class="fas fa-qrcode text-5xl mb-3"></i>
+            <h1 class="text-3xl font-bold mb-2">Skirt QR System</h1>
+            <div class="text-sm opacity-90">사용 목적을 선택하세요</div>
+        </div>
+
+        <!-- Mode 1: MES Helper -->
+        <a href="/mes-helper" class="block mb-4">
+            <div class="mode-card bg-gradient-to-br from-green-500 to-emerald-600 text-white rounded-2xl shadow-2xl p-8">
+                <div class="flex items-start gap-4">
+                    <div class="text-5xl">
+                        <i class="fas fa-camera"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h2 class="text-2xl font-bold mb-2">MES 입력 도우미</h2>
+                        <p class="text-sm opacity-90 mb-3">
+                            Skirt QR 스캔 → 작업물 번호 복사 → MES 앱에 붙여넣기
+                        </p>
+                        <div class="bg-white/20 rounded-lg p-3 text-xs">
+                            <div class="font-bold mb-1">✓ 사용 상황:</div>
+                            <ul class="space-y-1">
+                                <li>• MES에서 작업물 검색할 때</li>
+                                <li>• 수동 타이핑 실수 방지</li>
+                                <li>• 빠른 작업물 선택</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-4 text-center">
+                    <span class="inline-block bg-white/30 px-4 py-2 rounded-full text-sm font-bold">
+                        클릭하여 시작 →
+                    </span>
+                </div>
+            </div>
+        </a>
+
+        <!-- Mode 2: Location Tracking -->
+        <a href="/tracking" class="block">
+            <div class="mode-card bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-2xl shadow-2xl p-8">
+                <div class="flex items-start gap-4">
+                    <div class="text-5xl">
+                        <i class="fas fa-map-marked-alt"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h2 class="text-2xl font-bold mb-2">위치 추적 시스템</h2>
+                        <p class="text-sm opacity-90 mb-3">
+                            Location + Skirt QR 스캔 → 위치 이력 자동 저장
+                        </p>
+                        <div class="bg-white/20 rounded-lg p-3 text-xs">
+                            <div class="font-bold mb-1">✓ 사용 상황:</div>
+                            <ul class="space-y-1">
+                                <li>• 작업물 위치 이동 추적</li>
+                                <li>• 트레이서빌리티 강화</li>
+                                <li>• 이력 조회 및 관리</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-4 text-center">
+                    <span class="inline-block bg-white/30 px-4 py-2 rounded-full text-sm font-bold">
+                        클릭하여 시작 →
+                    </span>
+                </div>
+            </div>
+        </a>
+
+        <!-- Info -->
+        <div class="mt-6 bg-white/80 backdrop-blur rounded-xl p-4 text-center text-sm text-gray-600">
+            <i class="fas fa-info-circle mr-1"></i>
+            두 기능 모두 Skirt QR을 사용하지만 목적이 다릅니다
+        </div>
+    </div>
+</body>
+</html>
+  `);
+});
+
 // MES Helper - Quick QR to Clipboard
 app.get('/mes-helper', (c) => {
   return c.html(`
@@ -258,15 +364,15 @@ app.get('/mes-helper', (c) => {
   `);
 });
 
-// Root route - Serve mobile UI
-app.get('/', (c) => {
+// Location Tracking System
+app.get('/tracking', (c) => {
   return c.html(`
 <!DOCTYPE html>
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Skirt Tracking</title>
+    <title>Skirt 위치 추적</title>
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#1e40af">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -322,13 +428,21 @@ app.get('/', (c) => {
 </head>
 <body class="bg-gray-100 min-h-screen">
     <div class="container max-w-md mx-auto p-4">
+        <!-- Back Button -->
+        <div class="mb-4">
+            <a href="/" class="inline-flex items-center text-blue-600 hover:text-blue-700">
+                <i class="fas fa-arrow-left mr-2"></i>
+                메인으로 돌아가기
+            </a>
+        </div>
+
         <!-- Header -->
         <div class="bg-blue-700 text-white p-6 rounded-lg shadow-lg mb-4">
             <h1 class="text-2xl font-bold mb-2">
-                <i class="fas fa-qrcode mr-2"></i>
-                Skirt Tracking
+                <i class="fas fa-map-marked-alt mr-2"></i>
+                Skirt 위치 추적
             </h1>
-            <div class="text-sm opacity-90">QR 기반 위치 추적 시스템</div>
+            <div class="text-sm opacity-90">Location + Skirt QR 스캔으로 위치 이력 저장</div>
         </div>
 
         <!-- Current Location Display -->
@@ -408,5 +522,6 @@ app.get('/', (c) => {
 </html>
   `);
 });
+
 
 export default app

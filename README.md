@@ -14,16 +14,38 @@ QR 기반 Skirt 위치 트래킹 웹앱 (공장 PoC)
 
 ## 🌐 URLs
 
-### **메인 앱 (위치 추적)**
-- **Production**: https://041a05e0.webapp-3sm.pages.dev
-- **기능**: Location + Skirt QR 스캔, 위치 추적, 이력 조회
+### **메인 페이지 (모드 선택)**
+- **Production**: https://ed00b40b.webapp-3sm.pages.dev
+- **기능**: 두 가지 사용 모드 선택
 
-### **MES Helper (MES 입력 도우미)** ⭐️ NEW
-- **Production**: https://041a05e0.webapp-3sm.pages.dev/mes-helper
+### **모드 1: MES 입력 도우미** 📋
+- **URL**: https://ed00b40b.webapp-3sm.pages.dev/mes-helper
+- **목적**: MES 앱에서 작업물 번호 입력 시 실수 방지
 - **기능**: Skirt QR 스캔 → 작업물 번호 자동 복사 → MES 앱에 붙여넣기
+- **특징**: Location QR 불필요, 빠른 작업
+
+### **모드 2: 위치 추적 시스템** 📍
+- **URL**: https://ed00b40b.webapp-3sm.pages.dev/tracking
+- **목적**: 트레이서빌리티 강화, 작업물 위치 이동 추적
+- **기능**: Location + Skirt QR 스캔 → D1 저장 → 이력 조회
+- **특징**: 정확한 위치 기록, 이동 이력 관리
 
 ### **GitHub Repository**
 - https://github.com/twokomi/Skirt_ID_Tracking_System
+
+---
+
+## 🎯 두 가지 모드 비교
+
+| 구분 | MES 입력 도우미 | 위치 추적 시스템 |
+|------|----------------|-----------------|
+| **URL** | `/mes-helper` | `/tracking` |
+| **Location QR** | ❌ 불필요 | ✅ 필수 |
+| **Skirt QR** | ✅ 필수 | ✅ 필수 |
+| **데이터 저장** | localStorage만 | D1 데이터베이스 |
+| **주 목적** | MES 입력 편의성 | 위치 추적 이력 |
+| **사용 빈도** | 작업 시작 시 | 위치 이동 시마다 |
+| **네트워크** | 선택적 | 필수 |
 
 ---
 
@@ -372,8 +394,9 @@ npx wrangler pages deploy dist --project-name webapp
 
 - **플랫폼**: Cloudflare Pages
 - **상태**: ✅ 프로덕션 배포 완료
-- **Production URL**: https://041a05e0.webapp-3sm.pages.dev
-- **MES Helper URL**: https://041a05e0.webapp-3sm.pages.dev/mes-helper
+- **메인 URL**: https://ed00b40b.webapp-3sm.pages.dev
+- **MES Helper URL**: https://ed00b40b.webapp-3sm.pages.dev/mes-helper
+- **위치 추적 URL**: https://ed00b40b.webapp-3sm.pages.dev/tracking
 - **D1 Database**: webapp-production (a236ee02-4f7b-4260-a833-bbb3573bc28e)
 - **마지막 업데이트**: 2026-01-24
 
@@ -381,23 +404,39 @@ npx wrangler pages deploy dist --project-name webapp
 
 ## 🧪 테스트
 
-### **MES Helper 테스트**
+### **1. 메인 페이지 (모드 선택)**
 모바일 브라우저로 접속:
-- https://041a05e0.webapp-3sm.pages.dev/mes-helper
+- https://ed00b40b.webapp-3sm.pages.dev
+
+두 가지 카드 중 하나 선택:
+- 📋 **MES 입력 도우미** - 빠른 작업물 번호 입력
+- 📍 **위치 추적 시스템** - 위치 이동 이력 관리
+
+### **2. MES Helper 테스트**
+- https://ed00b40b.webapp-3sm.pages.dev/mes-helper
+
+**테스트 시나리오:**
+1. "Skirt QR 스캔" 버튼 클릭
+2. QR 코드 스캔 (아래 생성)
+3. "✓ 복사 완료!" 토스트 확인
+4. MES 앱으로 전환
+5. 검색창에 붙여넣기
+
+### **3. 위치 추적 테스트**
+- https://ed00b40b.webapp-3sm.pages.dev/tracking
+
+**테스트 시나리오:**
+1. Location QR 스캔: `CSW_LOC|MOD_01`
+2. Skirt QR 스캔: `CSW_SKIRT|SKIRT=SK-9999|HEAT=99999999`
+3. 저장 확인 Toast
+4. 조회: `SK-0001` (시드 데이터)
 
 **QR 코드 생성 도구**: https://www.qr-code-generator.com/
 
 **테스트용 QR 페이로드:**
 1. 표준 형식: `CSW_SKIRT|SKIRT=VB056-B5|HEAT=23712041`
-2. 단순 형식: `VB056-B5` (작업물 번호만)
-
-### **메인 앱 테스트**
-- https://041a05e0.webapp-3sm.pages.dev
-
-**테스트 시나리오:**
-1. Location QR: `CSW_LOC|MOD_01`
-2. Skirt QR: `CSW_SKIRT|SKIRT=SK-9999|HEAT=99999999`
-3. 조회: `SK-0001` (시드 데이터)
+2. 단순 형식: `VB056-B5` (MES Helper용)
+3. Location: `CSW_LOC|MOD_01`
 
 ---
 
