@@ -113,6 +113,26 @@ app.get('/api/locations', async (c) => {
   }
 });
 
+// API: GET /api/recent-scans - Get recent scan events (최신 20건)
+app.get('/api/recent-scans', async (c) => {
+  try {
+    const result = await c.env.DB.prepare(`
+      SELECT id, ts, operator, location_id, skirt_id, heat_no, source
+      FROM events
+      ORDER BY ts DESC
+      LIMIT 20
+    `).all();
+
+    return c.json({
+      ok: true,
+      scans: result.results || []
+    });
+  } catch (error) {
+    console.error('Error fetching recent scans:', error);
+    return c.json({ ok: false, error: 'Failed to fetch recent scans' }, 500);
+  }
+});
+
 // Home page - Mode selection
 app.get('/', (c) => {
   return c.html(`
@@ -514,6 +534,43 @@ app.get('/tracking', (c) => {
         <div id="search-results" class="hidden mt-4 bg-white rounded-lg shadow-md p-4">
             <h3 class="text-lg font-bold mb-3">조회 결과</h3>
             <div id="search-content"></div>
+        </div>
+
+        <!-- Recent Scans List -->
+        <div class="mt-4 bg-white rounded-lg shadow-md p-4">
+            <div class="flex justify-between items-center mb-3">
+                <h3 class="text-lg font-bold flex items-center">
+                    <i class="fas fa-history mr-2 text-blue-600"></i>
+                    최근 스캔 이력
+                </h3>
+                <button id="btn-refresh" class="text-blue-600 hover:text-blue-700">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+            </div>
+            
+            <!-- Table -->
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-50 border-b-2 border-gray-200">
+                        <tr>
+                            <th class="px-3 py-2 text-left font-semibold text-gray-700">No</th>
+                            <th class="px-3 py-2 text-left font-semibold text-gray-700">Skirt ID</th>
+                            <th class="px-3 py-2 text-left font-semibold text-gray-700">Location</th>
+                            <th class="px-3 py-2 text-left font-semibold text-gray-700">Heat No</th>
+                            <th class="px-3 py-2 text-left font-semibold text-gray-700">작업자</th>
+                            <th class="px-3 py-2 text-left font-semibold text-gray-700">시간</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recent-scans-list">
+                        <tr>
+                            <td colspan="6" class="text-center py-8 text-gray-500">
+                                <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
+                                <div>로딩 중...</div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 

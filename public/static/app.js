@@ -33,6 +33,12 @@ class SkirtTracker {
       if (e.key === 'Enter') this.searchSkirt();
     });
 
+    // Refresh button for recent scans
+    const refreshBtn = document.getElementById('btn-refresh');
+    if (refreshBtn) {
+      refreshBtn.addEventListener('click', () => this.loadRecentScans());
+    }
+
     // Save operator on change
     document.getElementById('operator-input').addEventListener('change', (e) => {
       this.operator = e.target.value.trim();
@@ -42,6 +48,9 @@ class SkirtTracker {
         localStorage.removeItem('operator');
       }
     });
+
+    // Load recent scans on init
+    this.loadRecentScans();
   }
 
   updateLocationDisplay(locationId) {
@@ -180,6 +189,9 @@ class SkirtTracker {
       if (data.ok) {
         const timestamp = new Date(data.ts).toLocaleString('ko-KR');
         this.showToast(`✓ ${skirtId} 저장 완료\n${this.currentLocation} @ ${timestamp}`, 'success');
+        
+        // Reload recent scans list
+        this.loadRecentScans();
       } else {
         this.showToast('저장 실패: ' + (data.error || 'Unknown error'), 'error');
       }
@@ -261,6 +273,57 @@ class SkirtTracker {
 
     contentDiv.innerHTML = html;
     resultsDiv.classList.remove('hidden');
+  }
+
+  async loadRecentScans() {
+    const listBody = document.getElementById('recent-scans-list');
+    
+    try {
+      const response = await fetch('/api/recent-scans');
+      const data = await response.json();
+
+      if (data.ok && data.scans.length > 0) {
+        listBody.innerHTML = data.scans.map((scan, index) => {
+          const time = new Date(scan.ts);
+          const timeStr = time.toLocaleString('ko-KR', {
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+
+          return `
+            <tr class="border-b border-gray-100 hover:bg-gray-50">
+              <td class="px-3 py-2 text-gray-700">${index + 1}</td>
+              <td class="px-3 py-2 font-semibold text-blue-700">${scan.skirt_id}</td>
+              <td class="px-3 py-2 text-gray-700">${scan.location_id}</td>
+              <td class="px-3 py-2 text-gray-600">${scan.heat_no || '-'}</td>
+              <td class="px-3 py-2 text-gray-600">${scan.operator || '-'}</td>
+              <td class="px-3 py-2 text-gray-500 text-xs">${timeStr}</td>
+            </tr>
+          `;
+        }).join('');
+      } else {
+        listBody.innerHTML = `
+          <tr>
+            <td colspan="6" class="text-center py-8 text-gray-500">
+              <i class="fas fa-inbox text-2xl mb-2"></i>
+              <div>스캔 이력이 없습니다</div>
+            </td>
+          </tr>
+        `;
+      }
+    } catch (error) {
+      console.error('Error loading recent scans:', error);
+      listBody.innerHTML = `
+        <tr>
+          <td colspan="6" class="text-center py-8 text-red-500">
+            <i class="fas fa-exclamation-triangle text-2xl mb-2"></i>
+            <div>로딩 실패</div>
+          </td>
+        </tr>
+      `;
+    }
   }
 
   showToast(message, type = 'info') {
