@@ -13,9 +13,9 @@ QR 기반 Skirt 위치 트래킹 웹앱 (공장 PoC)
 
 ## 🌐 URLs
 
-- **샌드박스 개발 서버**: https://3000-icaubolsu8pq8e3z9yskr-2e1b9533.sandbox.novita.ai
+- **Production**: https://7937726b.webapp-3sm.pages.dev
+- **GitHub Repository**: https://github.com/twokomi/Skirt_ID_Tracking_System
 - **API Base URL**: `/api`
-- **Production** (배포 후): https://webapp.pages.dev
 
 ## 🗄️ 데이터 아키텍처
 
@@ -251,6 +251,9 @@ npm run deploy
 - [x] Toast 알림
 - [x] D1 로컬 개발 환경
 - [x] API 에러 처리
+- [x] Cloudflare D1 프로덕션 배포
+- [x] GitHub 저장소 연동
+- [x] Cloudflare Pages 배포 완료
 
 ## 🚧 향후 개선 사항
 
@@ -265,8 +268,21 @@ npm run deploy
 ## 📝 배포 상태
 
 - **플랫폼**: Cloudflare Pages
-- **상태**: 🟡 로컬 개발 완료 / 프로덕션 배포 대기
+- **상태**: ✅ 프로덕션 배포 완료
+- **Production URL**: https://7937726b.webapp-3sm.pages.dev
+- **D1 Database**: webapp-production (a236ee02-4f7b-4260-a833-bbb3573bc28e)
 - **마지막 업데이트**: 2026-01-24
+
+## 🧪 테스트
+
+모바일 브라우저로 프로덕션 URL을 열어서 바로 테스트할 수 있습니다:
+- https://7937726b.webapp-3sm.pages.dev
+
+**QR 코드 생성 도구**: https://www.qr-code-generator.com/
+
+**테스트용 QR 페이로드:**
+1. Location: `CSW_LOC|MOD_01`
+2. Skirt: `CSW_SKIRT|SKIRT=SK-9999|HEAT=99999999`
 
 ## 📞 문의
 
