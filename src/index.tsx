@@ -133,6 +133,156 @@ app.get('/api/recent-scans', async (c) => {
   }
 });
 
+// ==============================================
+// MES API 연동 엔드포인트 (신규)
+// ==============================================
+
+// API: POST /api/mes/search-orders - MES에서 작업 오더 검색
+app.post('/api/mes/search-orders', async (c) => {
+  try {
+    const { skirt_id } = await c.req.json();
+
+    if (!skirt_id) {
+      return c.json({ ok: false, error: 'skirt_id is required' }, 400);
+    }
+
+    // TODO: MES_API_URL과 MES_API_KEY는 환경 변수로 설정 필요
+    // const MES_API_URL = c.env.MES_API_URL || 'https://mes.yourcompany.com';
+    // const MES_API_KEY = c.env.MES_API_KEY;
+
+    // 임시 Mock 데이터 (실제 MES API 연동 전)
+    const mockOrders = [
+      {
+        order_id: 'WO-12345',
+        skirt_id: skirt_id,
+        section_id: 'SEC-789',
+        process_type: 'Bend',
+        status: 'Ready',
+        heat_no: '23712041'
+      }
+    ];
+
+    // 실제 MES API 호출 예시 (주석 처리)
+    // const response = await fetch(`${MES_API_URL}/api/work-orders?skirt_id=${skirt_id}`, {
+    //   method: 'GET',
+    //   headers: {
+    //     'Authorization': `Bearer ${MES_API_KEY}`,
+    //     'Content-Type': 'application/json'
+    //   }
+    // });
+    //
+    // if (!response.ok) {
+    //   throw new Error(`MES API Error: ${response.status}`);
+    // }
+    //
+    // const data = await response.json();
+    
+    // D1에 검색 로그 저장
+    const log_id = generateUUID();
+    await c.env.DB.prepare(`
+      INSERT INTO mes_logs (id, ts, action, skirt_id, response, success)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `).bind(
+      log_id,
+      new Date().toISOString(),
+      'search_orders',
+      skirt_id,
+      JSON.stringify(mockOrders),
+      1
+    ).run();
+
+    return c.json({
+      ok: true,
+      orders: mockOrders
+    });
+  } catch (error) {
+    console.error('Error searching MES orders:', error);
+    return c.json({ ok: false, error: 'Failed to search orders' }, 500);
+  }
+});
+
+// API: POST /api/mes/start-work - MES에 작업 시작 전송
+app.post('/api/mes/start-work', async (c) => {
+  try {
+    const { order_id, skirt_id, section_id, operator, device_id } = await c.req.json();
+
+    if (!order_id || !skirt_id) {
+      return c.json({ ok: false, error: 'order_id and skirt_id are required' }, 400);
+    }
+
+    // TODO: 실제 MES API 호출
+    // const MES_API_URL = c.env.MES_API_URL || 'https://mes.yourcompany.com';
+    // const MES_API_KEY = c.env.MES_API_KEY;
+    //
+    // const response = await fetch(`${MES_API_URL}/api/work-orders/${order_id}/start`, {
+    //   method: 'POST',
+    //   headers: {
+    //     'Authorization': `Bearer ${MES_API_KEY}`,
+    //     'Content-Type': 'application/json'
+    //   },
+    //   body: JSON.stringify({
+    //     device_id,
+    //     operator,
+    //     skirt_id,
+    //     section_id,
+    //     timestamp: new Date().toISOString()
+    //   })
+    // });
+    //
+    // if (!response.ok) {
+    //   throw new Error(`MES API Error: ${response.status}`);
+    // }
+    //
+    // const result = await response.json();
+
+    // Mock 응답
+    const mockResult = {
+      success: true,
+      work_log_id: 'WL-' + Math.floor(Math.random() * 100000),
+      message: 'Work started successfully'
+    };
+
+    // D1에 작업 시작 로그 저장
+    const log_id = generateUUID();
+    await c.env.DB.prepare(`
+      INSERT INTO mes_logs (id, ts, action, skirt_id, section_id, operator, response, success)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `).bind(
+      log_id,
+      new Date().toISOString(),
+      'start_work',
+      skirt_id,
+      section_id || null,
+      operator || null,
+      JSON.stringify(mockResult),
+      1
+    ).run();
+
+    return c.json({
+      ok: true,
+      ...mockResult
+    });
+  } catch (error) {
+    console.error('Error starting work in MES:', error);
+    
+    // 실패 로그도 D1에 저장
+    const log_id = generateUUID();
+    await c.env.DB.prepare(`
+      INSERT INTO mes_logs (id, ts, action, skirt_id, response, success)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `).bind(
+      log_id,
+      new Date().toISOString(),
+      'start_work',
+      skirt_id || 'unknown',
+      JSON.stringify({ error: error.message }),
+      0
+    ).run();
+
+    return c.json({ ok: false, error: 'Failed to start work in MES' }, 500);
+  }
+});
+
 // Home page - Mode selection
 app.get('/', (c) => {
   return c.html(`
@@ -168,7 +318,7 @@ app.get('/', (c) => {
             <div class="text-sm opacity-90">사용 목적을 선택하세요</div>
         </div>
 
-        <!-- Mode 1: MES Helper -->
+        <!-- Mode 1: MES Helper (Manual) -->
         <a href="/mes-helper" class="block mb-4">
             <div class="mode-card bg-gradient-to-br from-green-500 to-emerald-600 text-white rounded-2xl shadow-2xl p-8">
                 <div class="flex items-start gap-4">
@@ -186,6 +336,36 @@ app.get('/', (c) => {
                                 <li>• MES에서 작업물 검색할 때</li>
                                 <li>• 수동 타이핑 실수 방지</li>
                                 <li>• 빠른 작업물 선택</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-4 text-center">
+                    <span class="inline-block bg-white/30 px-4 py-2 rounded-full text-sm font-bold">
+                        클릭하여 시작 →
+                    </span>
+                </div>
+            </div>
+        </a>
+
+        <!-- Mode 1-2: MES Auto (API 연동) -->
+        <a href="/mes-auto" class="block mb-4">
+            <div class="mode-card bg-gradient-to-br from-purple-500 to-pink-600 text-white rounded-2xl shadow-2xl p-8">
+                <div class="flex items-start gap-4">
+                    <div class="text-5xl">
+                        <i class="fas fa-bolt"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h2 class="text-2xl font-bold mb-2">MES 자동 연동 🆕</h2>
+                        <p class="text-sm opacity-90 mb-3">
+                            Skirt QR 스캔 → MES API 자동 호출 → 작업 시작
+                        </p>
+                        <div class="bg-white/20 rounded-lg p-3 text-xs">
+                            <div class="font-bold mb-1">✓ 사용 상황:</div>
+                            <ul class="space-y-1">
+                                <li>• MES API 연동 완료 시</li>
+                                <li>• 작업물 자동 선택</li>
+                                <li>• 트레이서빌리티 자동 기록</li>
                             </ul>
                         </div>
                     </div>
@@ -231,7 +411,7 @@ app.get('/', (c) => {
         <!-- Info -->
         <div class="mt-6 bg-white/80 backdrop-blur rounded-xl p-4 text-center text-sm text-gray-600">
             <i class="fas fa-info-circle mr-1"></i>
-            두 기능 모두 Skirt QR을 사용하지만 목적이 다릅니다
+            세 가지 기능이 있습니다. 상황에 맞게 선택하세요.
         </div>
     </div>
 </body>
@@ -301,6 +481,14 @@ app.get('/mes-helper', (c) => {
 </head>
 <body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
     <div class="container max-w-md mx-auto p-4">
+        <!-- Back Button -->
+        <div class="mb-4">
+            <a href="/" class="inline-flex items-center text-blue-600 hover:text-blue-700">
+                <i class="fas fa-arrow-left mr-2"></i>
+                메인으로 돌아가기
+            </a>
+        </div>
+
         <!-- Header -->
         <div class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-6 rounded-xl shadow-2xl mb-4">
             <h1 class="text-2xl font-bold mb-2">
@@ -379,6 +567,177 @@ app.get('/mes-helper', (c) => {
     </div>
 
     <script src="/static/mes-helper.js"></script>
+</body>
+</html>
+  `);
+});
+
+// MES Auto - API Integration with MES
+app.get('/mes-auto', (c) => {
+  return c.html(`
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>MES 자동 연동</title>
+    <meta name="theme-color" content="#7c3aed">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <style>
+      body {
+        overscroll-behavior-y: contain;
+        -webkit-user-select: none;
+        user-select: none;
+      }
+      .btn-large {
+        min-height: 5rem;
+        font-size: 1.5rem;
+        font-weight: 700;
+      }
+      #qr-reader {
+        width: 100%;
+        max-width: 500px;
+        margin: 0 auto;
+      }
+      #qr-reader video {
+        width: 100% !important;
+        height: auto !important;
+        border-radius: 0.5rem;
+      }
+      .toast {
+        position: fixed;
+        top: 1rem;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 9999;
+        min-width: 280px;
+        max-width: 90%;
+        padding: 1.5rem;
+        border-radius: 0.75rem;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+        animation: slideDown 0.3s ease-out;
+        font-size: 1.1rem;
+      }
+      @keyframes slideDown {
+        from { transform: translate(-50%, -100%); opacity: 0; }
+        to { transform: translate(-50%, 0); opacity: 1; }
+      }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-purple-50 to-pink-100 min-h-screen">
+    <div class="container max-w-md mx-auto p-4">
+        <!-- Back Button -->
+        <div class="mb-4">
+            <a href="/" class="inline-flex items-center text-purple-600 hover:text-purple-700">
+                <i class="fas fa-arrow-left mr-2"></i>
+                메인으로 돌아가기
+            </a>
+        </div>
+
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-purple-600 to-pink-600 text-white p-6 rounded-xl shadow-2xl mb-4">
+            <h1 class="text-2xl font-bold mb-2">
+                <i class="fas fa-bolt mr-2"></i>
+                MES 자동 연동
+            </h1>
+            <div class="text-sm opacity-90">QR 스캔으로 MES 작업 자동 시작</div>
+        </div>
+
+        <!-- Device ID Input -->
+        <div class="bg-white rounded-xl shadow-md p-4 mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+                <i class="fas fa-tablet-alt mr-2"></i>PD 번호 (Device ID)
+            </label>
+            <input 
+                type="text" 
+                id="device-id-input" 
+                placeholder="예: PD-ABC123"
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-lg"
+            >
+        </div>
+
+        <!-- Operator Input -->
+        <div class="bg-white rounded-xl shadow-md p-4 mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+                <i class="fas fa-user mr-2"></i>작업자 (선택)
+            </label>
+            <input 
+                type="text" 
+                id="operator-input" 
+                placeholder="이름 또는 사번 입력"
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-lg"
+            >
+        </div>
+
+        <!-- Scan Button -->
+        <button id="btn-scan" class="btn-large w-full bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white rounded-xl shadow-2xl transition-all active:scale-95 mb-4">
+            <i class="fas fa-qrcode text-3xl mb-2"></i>
+            <div>Skirt QR 스캔</div>
+        </button>
+
+        <!-- QR Scanner -->
+        <div id="qr-scanner" class="hidden bg-white rounded-xl shadow-2xl p-4 mb-4">
+            <div class="flex justify-between items-center mb-3">
+                <h3 class="text-lg font-bold">QR 코드 스캔</h3>
+                <button id="btn-close-scanner" class="text-red-600 text-2xl">
+                    <i class="fas fa-times-circle"></i>
+                </button>
+            </div>
+            <div id="qr-reader"></div>
+            <div class="text-sm text-gray-600 text-center mt-3">
+                <i class="fas fa-info-circle mr-1"></i>
+                Skirt QR을 카메라에 비춰주세요
+            </div>
+        </div>
+
+        <!-- Order Selection (검색 결과) -->
+        <div id="order-selection" class="hidden bg-white rounded-xl shadow-xl p-4 mb-4">
+            <h3 class="text-lg font-bold mb-3 flex items-center">
+                <i class="fas fa-list mr-2 text-purple-600"></i>
+                검색된 작업 오더
+            </h3>
+            <div id="order-list"></div>
+        </div>
+
+        <!-- Instructions -->
+        <div class="bg-purple-50 border-l-4 border-purple-400 p-4 rounded-lg mb-4">
+            <div class="flex items-start">
+                <i class="fas fa-info-circle text-purple-600 text-xl mr-3 mt-1"></i>
+                <div class="text-sm text-purple-800">
+                    <div class="font-bold mb-1">워크플로우:</div>
+                    <ol class="list-decimal list-inside space-y-1">
+                        <li>PD 번호와 작업자 입력</li>
+                        <li>Skirt QR 코드 스캔</li>
+                        <li>MES에서 작업 오더 자동 검색</li>
+                        <li>오더 선택 (첫 번째 자동 선택)</li>
+                        <li>작업 시작 버튼 클릭</li>
+                        <li>MES에 트레이서빌리티 자동 기록</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status -->
+        <div class="bg-white rounded-xl shadow-md p-4">
+            <h3 class="text-lg font-bold mb-2">시스템 상태</h3>
+            <div class="space-y-2 text-sm">
+                <div class="flex justify-between">
+                    <span class="text-gray-600">MES API 연동:</span>
+                    <span id="api-status" class="font-bold text-yellow-600">
+                        <i class="fas fa-circle text-yellow-500 mr-1"></i>
+                        Mock 모드 (테스트용)
+                    </span>
+                </div>
+                <div class="text-xs text-gray-500 mt-2">
+                    * 실제 MES API 연동 시 wrangler.jsonc에 MES_API_URL, MES_API_KEY 설정 필요
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/mes-auto.js"></script>
 </body>
 </html>
   `);

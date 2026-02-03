@@ -13,3 +13,21 @@ INSERT OR IGNORE INTO events (id, ts, operator, location_id, skirt_id, heat_no, 
   ('test-001', '2026-01-24T00:00:00Z', 'TestUser', 'MOD_01', 'SK-0001', '23712041', 'PD'),
   ('test-002', '2026-01-24T01:00:00Z', 'TestUser', 'MOD_02', 'SK-0001', '23712041', 'PD'),
   ('test-003', '2026-01-24T02:00:00Z', 'TestUser', 'MOD_03', 'SK-0001', '23712041', 'PD');
+
+-- Create MES logs table
+CREATE TABLE IF NOT EXISTS mes_logs (
+  id TEXT PRIMARY KEY,
+  ts TEXT NOT NULL,
+  action TEXT NOT NULL,
+  skirt_id TEXT,
+  section_id TEXT,
+  operator TEXT,
+  device_id TEXT,
+  response TEXT,
+  success INTEGER DEFAULT 1,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_mes_logs_ts ON mes_logs(ts DESC);
+CREATE INDEX IF NOT EXISTS idx_mes_logs_skirt ON mes_logs(skirt_id);
+CREATE INDEX IF NOT EXISTS idx_mes_logs_action ON mes_logs(action);
